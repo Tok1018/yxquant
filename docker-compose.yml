@@ -1,0 +1,93 @@
+version: '3.8'
+
+services:
+  # 主应用服务
+  web:
+    build: .
+    container_name: yxquant-web
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - ./ai_config.json:/app/ai_config.json
+    environment:
+      - DATABASE_PATH=/app/data/quant.db
+      - LOG_LEVEL=INFO
+      - TZ=Asia/Shanghai
+    restart: unless-stopped
+    depends_on:
+      - redis
+    networks:
+      - yxquant-network
+
+  # Redis缓存服务
+  redis:
+    image: redis:7-alpine
+    container_name: yxquant-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    restart: unless-stopped
+    networks:
+      - yxquant-network
+
+  # Nginx反向代理
+  nginx:
+    image: nginx:alpine
+    container_name: yxquant-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      - ./ssl:/etc/nginx/ssl
+    depends_on:
+      - web
+    restart: unless-stopped
+    networks:
+      - yxquant-network
+
+  # 数据库备份服务
+  backup:
+    image: alpine:latest
+    container_name: yxquant-backup
+    volumes:
+      - ./data:/app/data
+      - ./backups:/app/backups
+      - ./scripts/backup.sh:/app/backup.sh
+    command: /bin/sh -c "chmod +x /app/backup.sh && crond -f"
+    environment:
+      - BACKUP_SCHEDULE=0 2 * * *  # 每天凌晨2点备份
+    restart: unless-stopped
+    networks:
+      - yxquant-network
+
+  # 监控服务
+  monitoring:
+    image: prom/prometheus:latest
+    container_name: yxquant-monitoring
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    restart: unless-stopped
+    networks:
+      - yxquant-network
+
+volumes:
+  redis-data:
+  prometheus-data:
+
+networks:
+  yxquant-network:
+    driver: bridge

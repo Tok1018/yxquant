@@ -1,0 +1,547 @@
+{% extends "base.html" %}
+
+{% block title %}策略管理{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>策略管理</h2>
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createStrategyModal">
+                    <i class="fas fa-plus"></i> 创建策略
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 策略列表 -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">策略列表</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped" id="strategiesTable">
+                            <thead>
+                                <tr>
+                                    <th>策略名称</th>
+                                    <th>类型</th>
+                                    <th>状态</th>
+                                    <th>参数</th>
+                                    <th>创建时间</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- 策略数据将通过JavaScript加载 -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 创建策略模态框 -->
+<div class="modal fade" id="createStrategyModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">创建新策略</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="createStrategyForm">
+                    <div class="mb-3">
+                        <label for="strategyName" class="form-label">策略名称</label>
+                        <input type="text" class="form-control" id="strategyName" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="strategyDescription" class="form-label">策略描述</label>
+                        <textarea class="form-control" id="strategyDescription" rows="3"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="strategyType" class="form-label">策略类型</label>
+                        <select class="form-select" id="strategyType" required>
+                            <option value="">请选择策略类型</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">标签</label>
+                        <input type="text" class="form-control" id="strategyTags" placeholder="用逗号分隔多个标签">
+                    </div>
+                    <div id="parametersSection">
+                        <h6>策略参数</h6>
+                        <div id="parametersContainer">
+                            <!-- 参数将通过JavaScript动态生成 -->
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" onclick="createStrategy()">创建策略</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 编辑策略模态框 -->
+<div class="modal fade" id="editStrategyModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">编辑策略</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editStrategyForm">
+                    <input type="hidden" id="editStrategyId">
+                    <div class="mb-3">
+                        <label for="editStrategyName" class="form-label">策略名称</label>
+                        <input type="text" class="form-control" id="editStrategyName" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editStrategyDescription" class="form-label">策略描述</label>
+                        <textarea class="form-control" id="editStrategyDescription" rows="3"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editStrategyStatus" class="form-label">状态</label>
+                        <select class="form-select" id="editStrategyStatus">
+                            <option value="enabled">启用</option>
+                            <option value="disabled">禁用</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">标签</label>
+                        <input type="text" class="form-control" id="editStrategyTags" placeholder="用逗号分隔多个标签">
+                    </div>
+                    <div id="editParametersSection">
+                        <h6>策略参数</h6>
+                        <div id="editParametersContainer">
+                            <!-- 参数将通过JavaScript动态生成 -->
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" onclick="updateStrategy()">保存更改</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let strategies = {};
+let strategyTypes = {};
+
+// 页面加载时初始化
+document.addEventListener('DOMContentLoaded', function() {
+    loadStrategyTypes();
+    loadStrategies();
+});
+
+// 加载策略类型
+async function loadStrategyTypes() {
+    try {
+        const response = await fetch('/api/strategies/types');
+        const data = await response.json();
+        strategyTypes = data.types;
+        
+        const select = document.getElementById('strategyType');
+        select.innerHTML = '<option value="">请选择策略类型</option>';
+        strategyTypes.forEach(type => {
+            const option = document.createElement('option');
+            option.value = type.value;
+            option.textContent = type.label;
+            select.appendChild(option);
+        });
+        
+        // 监听策略类型变化
+        select.addEventListener('change', function() {
+            generateParameterInputs(this.value, 'parametersContainer');
+        });
+    } catch (error) {
+        console.error('加载策略类型失败:', error);
+    }
+}
+
+// 加载策略列表
+async function loadStrategies() {
+    try {
+        const response = await fetch('/api/strategies');
+        const data = await response.json();
+        // 将对象转换为数组格式
+        strategies = Object.values(data.strategies);
+        renderStrategiesTable();
+    } catch (error) {
+        console.error('加载策略列表失败:', error);
+    }
+}
+
+// 渲染策略表格
+function renderStrategiesTable() {
+    const tbody = document.querySelector('#strategiesTable tbody');
+    tbody.innerHTML = '';
+    
+    strategies.forEach(strategy => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${strategy.name}</td>
+            <td><span class="badge bg-info">${getStrategyTypeLabel(strategy.strategy_type)}</span></td>
+            <td><span class="badge ${strategy.status === 'enabled' ? 'bg-success' : 'bg-secondary'}">${strategy.status === 'enabled' ? '启用' : '禁用'}</span></td>
+            <td>${Object.keys(strategy.parameters).length} 个参数</td>
+            <td>${new Date(strategy.created_at).toLocaleDateString()}</td>
+            <td>
+                <div class="btn-group btn-group-sm">
+                    <button class="btn btn-outline-primary" onclick="editStrategy('${strategy.id}')">编辑</button>
+                    <button class="btn btn-outline-${strategy.status === 'enabled' ? 'warning' : 'success'}" onclick="toggleStrategy('${strategy.id}', '${strategy.status}')">
+                        ${strategy.status === 'enabled' ? '禁用' : '启用'}
+                    </button>
+                    <button class="btn btn-outline-danger" onclick="deleteStrategy('${strategy.id}')">删除</button>
+                </div>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+// 获取策略类型标签
+function getStrategyTypeLabel(type) {
+    const typeInfo = strategyTypes.find(t => t.value === type);
+    return typeInfo ? typeInfo.label : type;
+}
+
+// 生成参数输入框
+function generateParameterInputs(strategyType, containerId) {
+    const container = document.getElementById(containerId);
+    container.innerHTML = '';
+    
+    if (!strategyType) return;
+    
+    // 根据策略类型生成默认参数
+    const defaultParams = getDefaultParameters(strategyType);
+    
+    Object.entries(defaultParams).forEach(([paramName, paramConfig]) => {
+        const paramDiv = document.createElement('div');
+        paramDiv.className = 'mb-3';
+        
+        let inputHtml = '';
+        if (paramConfig.parameter_type === 'int' || paramConfig.parameter_type === 'float') {
+            inputHtml = `
+                <label for="${paramName}" class="form-label">${paramConfig.name}</label>
+                <input type="number" class="form-control" id="${paramName}" 
+                       value="${paramConfig.value}" 
+                       min="${paramConfig.min_value || ''}" 
+                       max="${paramConfig.max_value || ''}" 
+                       step="${paramConfig.step || ''}">
+                <div class="form-text">${paramConfig.description}</div>
+            `;
+        } else if (paramConfig.parameter_type === 'bool') {
+            inputHtml = `
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="${paramName}" ${paramConfig.value ? 'checked' : ''}>
+                    <label class="form-check-label" for="${paramName}">${paramConfig.name}</label>
+                </div>
+                <div class="form-text">${paramConfig.description}</div>
+            `;
+        } else {
+            inputHtml = `
+                <label for="${paramName}" class="form-label">${paramConfig.name}</label>
+                <input type="text" class="form-control" id="${paramName}" value="${paramConfig.value}">
+                <div class="form-text">${paramConfig.description}</div>
+            `;
+        }
+        
+        paramDiv.innerHTML = inputHtml;
+        container.appendChild(paramDiv);
+    });
+}
+
+// 获取默认参数配置
+function getDefaultParameters(strategyType) {
+    const defaults = {
+        momentum: {
+            lookback_period: {
+                name: '回望周期',
+                value: 20,
+                min_value: 5,
+                max_value: 50,
+                step: 1,
+                description: '计算动量的回望周期',
+                parameter_type: 'int'
+            },
+            threshold: {
+                name: '动量阈值',
+                value: 0.02,
+                min_value: 0.01,
+                max_value: 0.1,
+                step: 0.01,
+                description: '动量信号的阈值',
+                parameter_type: 'float'
+            }
+        },
+        mean_reversion: {
+            lookback_period: {
+                name: '回望周期',
+                value: 20,
+                min_value: 5,
+                max_value: 50,
+                step: 1,
+                description: '计算均值的回望周期',
+                parameter_type: 'int'
+            },
+            deviation_threshold: {
+                name: '标准差倍数',
+                value: 2.0,
+                min_value: 1.0,
+                max_value: 3.0,
+                step: 0.1,
+                description: '偏离均值的标准差倍数',
+                parameter_type: 'float'
+            }
+        },
+        breakout: {
+            lookback_period: {
+                name: '回望周期',
+                value: 20,
+                min_value: 5,
+                max_value: 50,
+                step: 1,
+                description: '计算突破的回望周期',
+                parameter_type: 'int'
+            },
+            breakout_threshold: {
+                name: '突破阈值',
+                value: 0.02,
+                min_value: 0.01,
+                max_value: 0.1,
+                step: 0.01,
+                description: '突破信号的阈值',
+                parameter_type: 'float'
+            }
+        }
+    };
+    
+    return defaults[strategyType] || {};
+}
+
+// 创建策略
+async function createStrategy() {
+    try {
+        const strategyType = document.getElementById('strategyType').value;
+        const parameters = {};
+        
+        // 收集参数
+        const paramContainer = document.getElementById('parametersContainer');
+        const inputs = paramContainer.querySelectorAll('input, select');
+        inputs.forEach(input => {
+            if (input.type === 'checkbox') {
+                parameters[input.id] = {
+                    name: input.id,
+                    value: input.checked,
+                    parameter_type: 'bool'
+                };
+            } else {
+                parameters[input.id] = {
+                    name: input.id,
+                    value: parseFloat(input.value) || input.value,
+                    parameter_type: input.type === 'number' ? 'float' : 'string'
+                };
+            }
+        });
+        
+        const requestData = {
+            name: document.getElementById('strategyName').value,
+            description: document.getElementById('strategyDescription').value,
+            strategy_type: strategyType,
+            parameters: parameters,
+            tags: document.getElementById('strategyTags').value.split(',').map(t => t.trim()).filter(t => t)
+        };
+        
+        const response = await fetch('/api/strategies', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(requestData)
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            alert('策略创建成功！');
+            bootstrap.Modal.getInstance(document.getElementById('createStrategyModal')).hide();
+            loadStrategies();
+        } else {
+            const error = await response.json();
+            alert('创建失败：' + error.detail);
+        }
+    } catch (error) {
+        console.error('创建策略失败:', error);
+        alert('创建策略失败：' + error.message);
+    }
+}
+
+// 编辑策略
+function editStrategy(strategyId) {
+    const strategy = strategies.find(s => s.id === strategyId);
+    if (!strategy) return;
+    
+    document.getElementById('editStrategyId').value = strategyId;
+    document.getElementById('editStrategyName').value = strategy.name;
+    document.getElementById('editStrategyDescription').value = strategy.description;
+    document.getElementById('editStrategyStatus').value = strategy.status;
+    document.getElementById('editStrategyTags').value = strategy.tags.join(', ');
+    
+    // 生成编辑参数输入框
+    generateEditParameterInputs(strategy.parameters);
+    
+    const modal = new bootstrap.Modal(document.getElementById('editStrategyModal'));
+    modal.show();
+}
+
+// 生成编辑参数输入框
+function generateEditParameterInputs(parameters) {
+    const container = document.getElementById('editParametersContainer');
+    container.innerHTML = '';
+    
+    Object.entries(parameters).forEach(([paramName, paramConfig]) => {
+        const paramDiv = document.createElement('div');
+        paramDiv.className = 'mb-3';
+        
+        let inputHtml = '';
+        if (paramConfig.parameter_type === 'int' || paramConfig.parameter_type === 'float') {
+            inputHtml = `
+                <label for="edit_${paramName}" class="form-label">${paramConfig.name}</label>
+                <input type="number" class="form-control" id="edit_${paramName}" 
+                       value="${paramConfig.value}" 
+                       min="${paramConfig.min_value || ''}" 
+                       max="${paramConfig.max_value || ''}" 
+                       step="${paramConfig.step || ''}">
+                <div class="form-text">${paramConfig.description}</div>
+            `;
+        } else if (paramConfig.parameter_type === 'bool') {
+            inputHtml = `
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="edit_${paramName}" ${paramConfig.value ? 'checked' : ''}>
+                    <label class="form-check-label" for="edit_${paramName}">${paramConfig.name}</label>
+                </div>
+                <div class="form-text">${paramConfig.description}</div>
+            `;
+        } else {
+            inputHtml = `
+                <label for="edit_${paramName}" class="form-label">${paramConfig.name}</label>
+                <input type="text" class="form-control" id="edit_${paramName}" value="${paramConfig.value}">
+                <div class="form-text">${paramConfig.description}</div>
+            `;
+        }
+        
+        paramDiv.innerHTML = inputHtml;
+        container.appendChild(paramDiv);
+    });
+}
+
+// 更新策略
+async function updateStrategy() {
+    try {
+        const strategyId = document.getElementById('editStrategyId').value;
+        const parameters = {};
+        
+        // 收集参数
+        const paramContainer = document.getElementById('editParametersContainer');
+        const inputs = paramContainer.querySelectorAll('input, select');
+        inputs.forEach(input => {
+            const paramName = input.id.replace('edit_', '');
+            if (input.type === 'checkbox') {
+                parameters[paramName] = input.checked;
+            } else {
+                parameters[paramName] = parseFloat(input.value) || input.value;
+            }
+        });
+        
+        // 更新基本信息
+        const updateData = {
+            name: document.getElementById('editStrategyName').value,
+            description: document.getElementById('editStrategyDescription').value,
+            status: document.getElementById('editStrategyStatus').value,
+            tags: document.getElementById('editStrategyTags').value.split(',').map(t => t.trim()).filter(t => t)
+        };
+        
+        // 更新策略信息
+        const response1 = await fetch(`/api/strategies/${strategyId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(updateData)
+        });
+        
+        // 更新参数
+        const response2 = await fetch(`/api/strategies/${strategyId}/parameters`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(parameters)
+        });
+        
+        if (response1.ok && response2.ok) {
+            alert('策略更新成功！');
+            bootstrap.Modal.getInstance(document.getElementById('editStrategyModal')).hide();
+            loadStrategies();
+        } else {
+            alert('更新失败');
+        }
+    } catch (error) {
+        console.error('更新策略失败:', error);
+        alert('更新策略失败：' + error.message);
+    }
+}
+
+// 切换策略状态
+async function toggleStrategy(strategyId, currentStatus) {
+    try {
+        const action = currentStatus === 'enabled' ? 'disable' : 'enable';
+        const response = await fetch(`/api/strategies/${strategyId}/${action}`, {
+            method: 'PUT'
+        });
+        
+        if (response.ok) {
+            alert(`策略已${action === 'enable' ? '启用' : '禁用'}！`);
+            loadStrategies();
+        } else {
+            alert('操作失败');
+        }
+    } catch (error) {
+        console.error('切换策略状态失败:', error);
+        alert('操作失败：' + error.message);
+    }
+}
+
+// 删除策略
+async function deleteStrategy(strategyId) {
+    if (!confirm('确定要删除这个策略吗？')) return;
+    
+    try {
+        const response = await fetch(`/api/strategies/${strategyId}`, {
+            method: 'DELETE'
+        });
+        
+        if (response.ok) {
+            alert('策略已删除！');
+            loadStrategies();
+        } else {
+            alert('删除失败');
+        }
+    } catch (error) {
+        console.error('删除策略失败:', error);
+        alert('删除策略失败：' + error.message);
+    }
+}
+</script>
+{% endblock %}

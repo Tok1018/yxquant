@@ -1,0 +1,510 @@
+{% extends "base.html" %}
+
+{% block title %}风险管理{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>风险管理</h2>
+                <div>
+                    <button class="btn btn-outline-primary me-2" onclick="loadRiskAnalysis()">
+                        <i class="fas fa-sync"></i> 刷新分析
+                    </button>
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#riskAnalysisModal">
+                        <i class="fas fa-chart-line"></i> 风险分析
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 风险概览 -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title">整体风险等级</h5>
+                    <h3 id="overallRiskLevel" class="text-muted">-</h3>
+                    <p id="overallRiskDescription" class="text-muted">-</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title">风险分数</h5>
+                    <h3 id="riskScore" class="text-muted">-</h3>
+                    <div class="progress mt-2">
+                        <div id="riskScoreBar" class="progress-bar" role="progressbar" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title">风险指标</h5>
+                    <h3 id="riskMetricsCount" class="text-muted">-</h3>
+                    <p class="text-muted">个指标</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title">风险预警</h5>
+                    <h3 id="alertsCount" class="text-muted">-</h3>
+                    <p class="text-muted">个预警</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 风险指标 -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">风险指标</h5>
+                </div>
+                <div class="card-body">
+                    <div id="riskMetricsContainer">
+                        <p class="text-muted text-center">暂无风险数据，请先进行风险分析</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 风险预警 -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">风险预警</h5>
+                </div>
+                <div class="card-body">
+                    <div id="alertsContainer">
+                        <p class="text-muted text-center">暂无风险预警</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 风险建议 -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">风险控制建议</h5>
+                </div>
+                <div class="card-body">
+                    <div id="recommendationsContainer">
+                        <p class="text-muted text-center">暂无建议</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 风险分析模态框 -->
+<div class="modal fade" id="riskAnalysisModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">投资组合风险分析</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="riskAnalysisForm">
+                    <div class="mb-3">
+                        <label for="portfolioValue" class="form-label">投资组合总价值 (元)</label>
+                        <input type="number" class="form-control" id="portfolioValue" required min="0" step="0.01">
+                    </div>
+                    <div class="mb-3">
+                        <label for="riskSymbols" class="form-label">股票代码</label>
+                        <select class="form-select" id="riskSymbols" multiple>
+                            <!-- 股票选项将通过JavaScript加载 -->
+                        </select>
+                        <div class="form-text">按住Ctrl键选择多个股票</div>
+                    </div>
+                    <div id="positionsContainer">
+                        <h6>持仓配置</h6>
+                        <div id="positionsList">
+                            <!-- 持仓输入框将通过JavaScript动态生成 -->
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" onclick="performRiskAnalysis()">开始分析</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 风险阈值配置模态框 -->
+<div class="modal fade" id="riskThresholdsModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">风险阈值配置</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="riskThresholdsForm">
+                    <div class="mb-3">
+                        <label for="maxPositionSize" class="form-label">单股最大仓位 (%)</label>
+                        <input type="number" class="form-control" id="maxPositionSize" min="0" max="100" step="0.1">
+                    </div>
+                    <div class="mb-3">
+                        <label for="maxTotalPosition" class="form-label">总仓位上限 (%)</label>
+                        <input type="number" class="form-control" id="maxTotalPosition" min="0" max="100" step="0.1">
+                    </div>
+                    <div class="mb-3">
+                        <label for="maxDrawdown" class="form-label">最大回撤 (%)</label>
+                        <input type="number" class="form-control" id="maxDrawdown" min="0" max="100" step="0.1">
+                    </div>
+                    <div class="mb-3">
+                        <label for="maxVolatility" class="form-label">最大波动率 (%)</label>
+                        <input type="number" class="form-control" id="maxVolatility" min="0" max="100" step="0.1">
+                    </div>
+                    <div class="mb-3">
+                        <label for="minLiquidity" class="form-label">最小流动性 (元)</label>
+                        <input type="number" class="form-control" id="minLiquidity" min="0" step="1000">
+                    </div>
+                    <div class="mb-3">
+                        <label for="maxCorrelation" class="form-label">最大相关性</label>
+                        <input type="number" class="form-control" id="maxCorrelation" min="0" max="1" step="0.01">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" onclick="updateRiskThresholds()">保存配置</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let riskData = null;
+let availableStocks = [];
+
+// 页面加载时初始化
+document.addEventListener('DOMContentLoaded', function() {
+    loadAvailableStocks();
+    loadRiskThresholds();
+});
+
+// 加载可用股票
+async function loadAvailableStocks() {
+    try {
+        const response = await fetch('/api/watchlist');
+        const data = await response.json();
+        availableStocks = data.watchlist || [];
+        
+        const select = document.getElementById('riskSymbols');
+        select.innerHTML = '';
+        availableStocks.forEach(stock => {
+            const option = document.createElement('option');
+            option.value = stock.symbol;
+            option.textContent = `${stock.symbol} - ${stock.name}`;
+            select.appendChild(option);
+        });
+    } catch (error) {
+        console.error('加载股票列表失败:', error);
+    }
+}
+
+// 加载风险阈值
+async function loadRiskThresholds() {
+    try {
+        const response = await fetch('/api/risk/thresholds');
+        const data = await response.json();
+        const thresholds = data.thresholds;
+        
+        // 填充表单
+        document.getElementById('maxPositionSize').value = (thresholds.max_position_size * 100).toFixed(1);
+        document.getElementById('maxTotalPosition').value = (thresholds.max_total_position * 100).toFixed(1);
+        document.getElementById('maxDrawdown').value = (thresholds.max_drawdown * 100).toFixed(1);
+        document.getElementById('maxVolatility').value = (thresholds.max_volatility * 100).toFixed(1);
+        document.getElementById('minLiquidity').value = thresholds.min_liquidity;
+        document.getElementById('maxCorrelation').value = thresholds.max_correlation;
+    } catch (error) {
+        console.error('加载风险阈值失败:', error);
+    }
+}
+
+// 监听股票选择变化
+document.getElementById('riskSymbols').addEventListener('change', function() {
+    generatePositionInputs();
+});
+
+// 生成持仓输入框
+function generatePositionInputs() {
+    const selectedSymbols = Array.from(document.getElementById('riskSymbols').selectedOptions);
+    const container = document.getElementById('positionsList');
+    container.innerHTML = '';
+    
+    selectedSymbols.forEach(option => {
+        const div = document.createElement('div');
+        div.className = 'mb-3';
+        div.innerHTML = `
+            <label for="position_${option.value}" class="form-label">${option.textContent} 持仓金额 (元)</label>
+            <input type="number" class="form-control" id="position_${option.value}" min="0" step="0.01">
+        `;
+        container.appendChild(div);
+    });
+}
+
+// 执行风险分析
+async function performRiskAnalysis() {
+    try {
+        const portfolioValue = parseFloat(document.getElementById('portfolioValue').value);
+        const selectedSymbols = Array.from(document.getElementById('riskSymbols').selectedOptions);
+        
+        if (!portfolioValue || selectedSymbols.length === 0) {
+            alert('请填写投资组合价值和选择股票');
+            return;
+        }
+        
+        // 收集持仓信息
+        const positions = {};
+        selectedSymbols.forEach(option => {
+            const positionValue = parseFloat(document.getElementById(`position_${option.value}`).value) || 0;
+            if (positionValue > 0) {
+                positions[option.value] = positionValue;
+            }
+        });
+        
+        if (Object.keys(positions).length === 0) {
+            alert('请至少设置一个持仓');
+            return;
+        }
+        
+        const requestData = {
+            symbols: selectedSymbols.map(option => option.value),
+            positions: positions,
+            portfolio_value: portfolioValue
+        };
+        
+        const response = await fetch('/api/risk/analyze', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(requestData)
+        });
+        
+        if (response.ok) {
+            riskData = await response.json();
+            displayRiskAnalysis(riskData);
+            bootstrap.Modal.getInstance(document.getElementById('riskAnalysisModal')).hide();
+        } else {
+            const error = await response.json();
+            alert('风险分析失败：' + error.detail);
+        }
+    } catch (error) {
+        console.error('风险分析失败:', error);
+        alert('风险分析失败：' + error.message);
+    }
+}
+
+// 显示风险分析结果
+function displayRiskAnalysis(data) {
+    // 更新概览
+    updateRiskOverview(data);
+    
+    // 显示风险指标
+    displayRiskMetrics(data.risk_metrics);
+    
+    // 显示风险预警
+    displayRiskAlerts(data.alerts);
+    
+    // 显示建议
+    displayRecommendations(data.recommendations);
+}
+
+// 更新风险概览
+function updateRiskOverview(data) {
+    const riskLevelMap = {
+        'low': { text: '低风险', class: 'text-success' },
+        'medium': { text: '中风险', class: 'text-warning' },
+        'high': { text: '高风险', class: 'text-danger' },
+        'critical': { text: '极高风险', class: 'text-dark' }
+    };
+    
+    const riskLevel = riskLevelMap[data.overall_risk_level] || { text: '未知', class: 'text-muted' };
+    
+    document.getElementById('overallRiskLevel').textContent = riskLevel.text;
+    document.getElementById('overallRiskLevel').className = riskLevel.class;
+    document.getElementById('overallRiskDescription').textContent = `风险分数: ${data.risk_score.toFixed(1)}`;
+    
+    document.getElementById('riskScore').textContent = data.risk_score.toFixed(1);
+    const riskScoreBar = document.getElementById('riskScoreBar');
+    riskScoreBar.style.width = `${data.risk_score}%`;
+    riskScoreBar.className = `progress-bar ${getRiskBarColor(data.risk_score)}`;
+    
+    document.getElementById('riskMetricsCount').textContent = data.risk_metrics.length;
+    document.getElementById('alertsCount').textContent = data.alerts.length;
+}
+
+// 获取风险条颜色
+function getRiskBarColor(score) {
+    if (score >= 80) return 'bg-danger';
+    if (score >= 60) return 'bg-warning';
+    if (score >= 30) return 'bg-info';
+    return 'bg-success';
+}
+
+// 显示风险指标
+function displayRiskMetrics(metrics) {
+    const container = document.getElementById('riskMetricsContainer');
+    
+    if (metrics.length === 0) {
+        container.innerHTML = '<p class="text-muted text-center">暂无风险指标</p>';
+        return;
+    }
+    
+    container.innerHTML = '';
+    metrics.forEach(metric => {
+        const div = document.createElement('div');
+        div.className = 'mb-3';
+        
+        const levelClass = {
+            'low': 'text-success',
+            'medium': 'text-warning',
+            'high': 'text-danger',
+            'critical': 'text-dark'
+        }[metric.level] || 'text-muted';
+        
+        const progressWidth = Math.min((metric.value / metric.threshold) * 100, 100);
+        
+        div.innerHTML = `
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h6 class="mb-1">${metric.name}</h6>
+                    <p class="mb-1 text-muted">${metric.description}</p>
+                    <small class="${levelClass}">${metric.recommendation}</small>
+                </div>
+                <div class="text-end">
+                    <div class="fw-bold ${levelClass}">${metric.value.toFixed(4)}</div>
+                    <small class="text-muted">阈值: ${metric.threshold.toFixed(4)}</small>
+                </div>
+            </div>
+            <div class="progress mt-2" style="height: 6px;">
+                <div class="progress-bar ${getRiskBarColor(progressWidth)}" 
+                     style="width: ${progressWidth}%"></div>
+            </div>
+        `;
+        container.appendChild(div);
+    });
+}
+
+// 显示风险预警
+function displayRiskAlerts(alerts) {
+    const container = document.getElementById('alertsContainer');
+    
+    if (alerts.length === 0) {
+        container.innerHTML = '<p class="text-muted text-center">暂无风险预警</p>';
+        return;
+    }
+    
+    container.innerHTML = '';
+    alerts.forEach(alert => {
+        const div = document.createElement('div');
+        div.className = 'alert alert-warning alert-dismissible fade show';
+        
+        const levelClass = {
+            'low': 'alert-success',
+            'medium': 'alert-warning',
+            'high': 'alert-danger',
+            'critical': 'alert-dark'
+        }[alert.level] || 'alert-warning';
+        
+        div.className = `alert ${levelClass} alert-dismissible fade show`;
+        div.innerHTML = `
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <h6 class="alert-heading">${alert.message}</h6>
+                    <p class="mb-1">风险类型: ${alert.risk_type}</p>
+                    <small>时间: ${new Date(alert.timestamp).toLocaleString()}</small>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        `;
+        container.appendChild(div);
+    });
+}
+
+// 显示建议
+function displayRecommendations(recommendations) {
+    const container = document.getElementById('recommendationsContainer');
+    
+    if (recommendations.length === 0) {
+        container.innerHTML = '<p class="text-muted text-center">暂无建议</p>';
+        return;
+    }
+    
+    container.innerHTML = '';
+    const ul = document.createElement('ul');
+    ul.className = 'list-group list-group-flush';
+    
+    recommendations.forEach(rec => {
+        const li = document.createElement('li');
+        li.className = 'list-group-item';
+        li.textContent = rec;
+        ul.appendChild(li);
+    });
+    
+    container.appendChild(ul);
+}
+
+// 更新风险阈值
+async function updateRiskThresholds() {
+    try {
+        const thresholds = {
+            max_position_size: parseFloat(document.getElementById('maxPositionSize').value) / 100,
+            max_total_position: parseFloat(document.getElementById('maxTotalPosition').value) / 100,
+            max_drawdown: parseFloat(document.getElementById('maxDrawdown').value) / 100,
+            max_volatility: parseFloat(document.getElementById('maxVolatility').value) / 100,
+            min_liquidity: parseFloat(document.getElementById('minLiquidity').value),
+            max_correlation: parseFloat(document.getElementById('maxCorrelation').value)
+        };
+        
+        const response = await fetch('/api/risk/thresholds', {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(thresholds)
+        });
+        
+        if (response.ok) {
+            alert('风险阈值更新成功！');
+            bootstrap.Modal.getInstance(document.getElementById('riskThresholdsModal')).hide();
+        } else {
+            alert('更新失败');
+        }
+    } catch (error) {
+        console.error('更新风险阈值失败:', error);
+        alert('更新失败：' + error.message);
+    }
+}
+
+// 加载风险分析
+function loadRiskAnalysis() {
+    if (riskData) {
+        displayRiskAnalysis(riskData);
+    } else {
+        alert('请先进行风险分析');
+    }
+}
+</script>
+{% endblock %}

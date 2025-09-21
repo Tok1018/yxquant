@@ -1,0 +1,222 @@
+{% extends "base.html" %}
+
+{% block title %}自选股管理 - 量化交易AI系统{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">自选股管理</h1>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5>添加自选股</h5>
+            </div>
+            <div class="card-body">
+                <form id="addStockForm">
+                    <div class="mb-3">
+                        <label for="symbol" class="form-label">股票代码</label>
+                        <input type="text" class="form-control" id="symbol" placeholder="例如: AAPL" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="notes" class="form-label">备注</label>
+                        <textarea class="form-control" id="notes" rows="3" placeholder="添加备注信息"></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary">添加</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5>批量操作</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <button class="btn btn-success" onclick="updateAllData()">更新所有数据</button>
+                    <button class="btn btn-info" onclick="analyzeAll()">批量分析</button>
+                    <button class="btn btn-warning" onclick="exportWatchlist()">导出自选股</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">添加自选股</h5>
+            </div>
+            <div class="card-body">
+                <form id="addStockForm">
+                    <div class="mb-3">
+                        <label for="stockSymbol" class="form-label">股票代码</label>
+                        <input type="text" class="form-control" id="stockSymbol" name="symbol" 
+                               placeholder="例如: 000001.SZ, AAPL" required>
+                        <div class="form-text">支持A股（如000001.SZ）和美股（如AAPL）</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="stockNotes" class="form-label">备注</label>
+                        <input type="text" class="form-control" id="stockNotes" name="notes" 
+                               placeholder="可选备注信息">
+                    </div>
+                    <button type="submit" class="btn btn-primary">添加股票</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5>自选股列表</h5>
+                <span class="badge bg-primary">{{ watchlist|length }} 只股票</span>
+            </div>
+            <div class="card-body">
+                {% if not watchlist.empty %}
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>股票代码</th>
+                                <th>股票名称</th>
+                                <th>行业</th>
+                                <th>添加时间</th>
+                                <th>备注</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for index, stock in watchlist.iterrows() %}
+                            <tr>
+                                <td><strong>{{ stock.symbol }}</strong></td>
+                                <td>{{ stock['name'] }}</td>
+                                <td>{{ stock['industry'] }}</td>
+                                <td>{{ stock['added_at'] }}</td>
+                                <td>{{ stock['notes'] }}</td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <button class="btn btn-outline-primary" onclick="analyzeStock('{{ stock.symbol }}')">分析</button>
+                                        <button class="btn btn-outline-info" onclick="viewChart('{{ stock.symbol }}')">图表</button>
+                                        <button class="btn btn-outline-danger" onclick="removeStock('{{ stock.symbol }}')">删除</button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <p class="text-muted">暂无自选股，请添加股票到自选股列表</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// 添加股票
+document.getElementById('addStockForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const symbol = document.getElementById('stockSymbol').value;
+    const notes = document.getElementById('stockNotes').value;
+    
+    console.log('表单数据:', { symbol, notes });
+    
+    // 验证输入
+    if (!symbol || !symbol.trim()) {
+        alert('请输入股票代码');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/watchlist/add', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                symbol: symbol,
+                notes: notes
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.status === 'success') {
+            alert('添加成功！');
+            location.reload();
+        } else {
+            alert('添加失败：' + (result.detail || result.message || '未知错误'));
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('添加失败：请检查网络连接或重试');
+    }
+});
+
+// 删除股票
+async function removeStock(symbol) {
+    if (!confirm(`确定要删除 ${symbol} 吗？`)) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/api/watchlist/${symbol}`, {
+            method: 'DELETE'
+        });
+        
+        const result = await response.json();
+        
+        if (result.status === 'success') {
+            alert('删除成功！');
+            location.reload();
+        } else {
+            alert('删除失败：' + result.message);
+        }
+    } catch (error) {
+        alert('删除失败：' + error.message);
+    }
+}
+
+// 分析股票
+function analyzeStock(symbol) {
+    window.location.href = `/analysis?symbol=${symbol}`;
+}
+
+// 查看图表
+function viewChart(symbol) {
+    // 打开图表页面
+    window.open(`/chart/${symbol}`, '_blank');
+}
+
+// 更新所有数据
+async function updateAllData() {
+    if (!confirm('确定要更新所有股票数据吗？这可能需要一些时间。')) {
+        return;
+    }
+    
+    alert('数据更新功能待实现');
+}
+
+// 批量分析
+function analyzeAll() {
+    alert('批量分析功能待实现');
+}
+
+// 导出自选股
+function exportWatchlist() {
+    alert('导出功能待实现');
+}
+</script>
+{% endblock %}

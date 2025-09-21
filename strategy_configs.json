@@ -1,0 +1,107 @@
+{
+  "momentum_basic": {
+    "id": "momentum_basic",
+    "name": "基础动量策略",
+    "description": "基于价格动量的简单策略",
+    "strategy_type": "momentum",
+    "status": "enabled",
+    "parameters": {
+      "lookback_period": {
+        "name": "lookback_period",
+        "value": 20,
+        "min_value": 5,
+        "max_value": 50,
+        "step": 1,
+        "description": "回望周期",
+        "parameter_type": "int"
+      },
+      "threshold": {
+        "name": "threshold",
+        "value": 0.02,
+        "min_value": 0.01,
+        "max_value": 0.1,
+        "step": 0.01,
+        "description": "动量阈值",
+        "parameter_type": "float"
+      }
+    },
+    "created_at": "2025-09-21T19:58:39.846778",
+    "updated_at": "2025-09-21T19:58:39.846781",
+    "created_by": "system",
+    "version": "1.0.0",
+    "tags": [
+      "momentum",
+      "basic"
+    ]
+  },
+  "mean_reversion_basic": {
+    "id": "mean_reversion_basic",
+    "name": "基础均值回归策略",
+    "description": "基于价格均值回归的策略",
+    "strategy_type": "mean_reversion",
+    "status": "enabled",
+    "parameters": {
+      "lookback_period": {
+        "name": "lookback_period",
+        "value": 20,
+        "min_value": 5,
+        "max_value": 50,
+        "step": 1,
+        "description": "回望周期",
+        "parameter_type": "int"
+      },
+      "deviation_threshold": {
+        "name": "deviation_threshold",
+        "value": 2.0,
+        "min_value": 1.0,
+        "max_value": 3.0,
+        "step": 0.1,
+        "description": "标准差倍数",
+        "parameter_type": "float"
+      }
+    },
+    "created_at": "2025-09-21T19:58:39.846789",
+    "updated_at": "2025-09-21T19:58:39.846789",
+    "created_by": "system",
+    "version": "1.0.0",
+    "tags": [
+      "mean_reversion",
+      "basic"
+    ]
+  },
+  "breakout_basic": {
+    "id": "breakout_basic",
+    "name": "基础突破策略",
+    "description": "基于价格突破的策略",
+    "strategy_type": "breakout",
+    "status": "enabled",
+    "parameters": {
+      "lookback_period": {
+        "name": "lookback_period",
+        "value": 20,
+        "min_value": 5,
+        "max_value": 50,
+        "step": 1,
+        "description": "回望周期",
+        "parameter_type": "int"
+      },
+      "breakout_threshold": {
+        "name": "breakout_threshold",
+        "value": 0.02,
+        "min_value": 0.01,
+        "max_value": 0.1,
+        "step": 0.01,
+        "description": "突破阈值",
+        "parameter_type": "float"
+      }
+    },
+    "created_at": "2025-09-21T19:58:39.846794",
+    "updated_at": "2025-09-21T19:58:39.846794",
+    "created_by": "system",
+    "version": "1.0.0",
+    "tags": [
+      "breakout",
+      "basic"
+    ]
+  }
+}

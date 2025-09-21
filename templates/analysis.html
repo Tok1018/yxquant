@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI分析 - 量化交易AI系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/static/css/style.css" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/">量化交易AI系统</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">首页</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/watchlist">自选股</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/strategies">策略管理</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/backtest">回测</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/analysis">AI分析</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/data">数据管理</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/monitor">系统监控</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-12">
+                <h2>AI分析</h2>
+                <p class="text-muted">使用AI技术分析股票</p>
+            </div>
+        </div>
+
+        <div class="row mt-4">
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">分析配置</h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="analysisForm">
+                            <div class="mb-3">
+                                <label for="symbol" class="form-label">选择股票</label>
+                                <select class="form-select" id="symbol" name="symbol" required>
+                                    <option value="">请选择股票</option>
+                                    {% if not watchlist.empty %}
+                                    {% for index, stock in watchlist.iterrows() %}
+                                    <option value="{{ stock.symbol }}">{{ stock.symbol }} - {{ stock['name'] }}</option>
+                                    {% endfor %}
+                                    {% endif %}
+                                </select>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="analysis_type" class="form-label">分析类型</label>
+                                <select class="form-select" id="analysis_type" name="analysis_type" required>
+                                    <option value="">请选择分析类型</option>
+                                    <option value="technical">技术分析</option>
+                                    <option value="sentiment">情绪分析</option>
+                                    <option value="ai_signal">AI信号</option>
+                                </select>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="data_period" class="form-label">数据周期（天）</label>
+                                <input type="number" class="form-control" id="data_period" name="data_period" value="30" min="7" max="365">
+                            </div>
+                            
+                            <button type="submit" class="btn btn-primary">开始分析</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">分析结果</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="analysisResults" style="display: none;">
+                            <div id="technicalAnalysis" style="display: none;">
+                                <h6>技术分析结果</h6>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <p><strong>当前价格:</strong> <span id="currentPrice">-</span></p>
+                                        <p><strong>RSI信号:</strong> <span id="rsiSignal" class="badge">-</span></p>
+                                        <p><strong>MACD信号:</strong> <span id="macdSignal" class="badge">-</span></p>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <p><strong>布林带信号:</strong> <span id="bbSignal" class="badge">-</span></p>
+                                        <p><strong>RSI值:</strong> <span id="rsiValue">-</span></p>
+                                        <p><strong>MACD值:</strong> <span id="macdValue">-</span></p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div id="sentimentAnalysis" style="display: none;">
+                                <h6>情绪分析结果</h6>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <p><strong>情绪得分:</strong> <span id="sentimentScore">-</span></p>
+                                        <p><strong>情绪标签:</strong> <span id="sentimentLabel" class="badge">-</span></p>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <p><strong>置信度:</strong> <span id="confidence">-</span></p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div id="aiSignalAnalysis" style="display: none;">
+                                <h6>AI信号分析结果</h6>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <p><strong>信号类型:</strong> <span id="signalType" class="badge">-</span></p>
+                                        <p><strong>置信度:</strong> <span id="signalConfidence">-</span></p>
+                                        <p><strong>目标价格:</strong> <span id="targetPrice">-</span></p>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <p><strong>止损价格:</strong> <span id="stopLoss">-</span></p>
+                                        <p><strong>分析理由:</strong></p>
+                                        <p id="reasoning" class="text-muted">-</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div id="noAnalysis" class="text-center text-muted">
+                            <p>请选择股票和分析类型开始分析</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/js/main.js"></script>
+    <script>
+        document.getElementById('analysisForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const data = {
+                symbol: formData.get('symbol'),
+                analysis_type: formData.get('analysis_type'),
+                data_period: parseInt(formData.get('data_period'))
+            };
+            
+            // 显示加载状态
+            const submitBtn = this.querySelector('button[type="submit"]');
+            const originalText = submitBtn.textContent;
+            submitBtn.textContent = '分析中...';
+            submitBtn.disabled = true;
+            
+            fetch('/api/analysis/stock', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    displayAnalysisResults(data.analysis, formData.get('analysis_type'));
+                } else {
+                    alert('分析失败: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('分析失败');
+            })
+            .finally(() => {
+                submitBtn.textContent = originalText;
+                submitBtn.disabled = false;
+            });
+        });
+        
+        function displayAnalysisResults(analysis, analysisType) {
+            document.getElementById('analysisResults').style.display = 'block';
+            document.getElementById('noAnalysis').style.display = 'none';
+            
+            // 隐藏所有分析类型
+            document.getElementById('technicalAnalysis').style.display = 'none';
+            document.getElementById('sentimentAnalysis').style.display = 'none';
+            document.getElementById('aiSignalAnalysis').style.display = 'none';
+            
+            if (analysisType === 'technical') {
+                document.getElementById('technicalAnalysis').style.display = 'block';
+                document.getElementById('currentPrice').textContent = analysis.current_price;
+                document.getElementById('rsiSignal').textContent = analysis.signals.rsi || '-';
+                document.getElementById('macdSignal').textContent = analysis.signals.macd || '-';
+                document.getElementById('bbSignal').textContent = analysis.signals.bb || '-';
+                document.getElementById('rsiValue').textContent = analysis.indicators.rsi || '-';
+                document.getElementById('macdValue').textContent = analysis.indicators.macd || '-';
+            } else if (analysisType === 'sentiment') {
+                document.getElementById('sentimentAnalysis').style.display = 'block';
+                document.getElementById('sentimentScore').textContent = analysis.sentiment_score;
+                document.getElementById('sentimentLabel').textContent = analysis.sentiment_label;
+                document.getElementById('confidence').textContent = analysis.confidence;
+            } else if (analysisType === 'ai_signal') {
+                document.getElementById('aiSignalAnalysis').style.display = 'block';
+                document.getElementById('signalType').textContent = analysis.signal_type;
+                document.getElementById('signalConfidence').textContent = analysis.confidence;
+                document.getElementById('targetPrice').textContent = analysis.target_price || '-';
+                document.getElementById('stopLoss').textContent = analysis.stop_loss || '-';
+                document.getElementById('reasoning').textContent = analysis.reasoning || '-';
+            }
+        }
+    </script>
+</body>
+</html>

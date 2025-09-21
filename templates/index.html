@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+
+{% block title %}首页 - 量化交易AI系统{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">量化交易AI系统</h1>
+        <p class="lead">基于AI的智能量化交易分析系统</p>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title">自选股</h5>
+                <h2 class="text-primary">{{ stats.watchlist_count }}</h2>
+                <p class="card-text">只股票</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title">股票总数</h5>
+                <h2 class="text-success">{{ stats.stocks_count }}</h2>
+                <p class="card-text">只股票</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title">AI模型</h5>
+                <h2 class="text-info">{{ stats.active_ai_models }}</h2>
+                <p class="card-text">个活跃</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title">系统状态</h5>
+                <h2 class="text-success">正常</h2>
+                <p class="card-text">运行中</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5>快速操作</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="/watchlist" class="btn btn-primary">管理自选股</a>
+                    <a href="/backtest" class="btn btn-success">运行回测</a>
+                    <a href="/analysis" class="btn btn-info">AI分析</a>
+                    <a href="/strategies" class="btn btn-warning">策略管理</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5>系统信息</h5>
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled">
+                    <li><strong>AI模型:</strong> {{ stats.ai_models|join(', ') }}</li>
+                    <li><strong>数据库:</strong> SQLite</li>
+                    <li><strong>数据源:</strong> yfinance, akshare, tushare</li>
+                    <li><strong>策略:</strong> 动量、均值回归、AI增强</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5>最近活动</h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <h6>欢迎使用量化交易AI系统！</h6>
+                    <p>这是一个基于AI的智能量化交易分析系统，集成了多种AI模型和技术分析工具。</p>
+                    <hr>
+                    <p class="mb-0">
+                        <strong>主要功能:</strong><br>
+                        • 多AI模型支持 (GPT、DeepSeek、Gemini等)<br>
+                        • 智能策略分析<br>
+                        • 风险管理<br>
+                        • 回测系统<br>
+                        • Web API接口
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

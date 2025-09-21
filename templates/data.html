@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数据管理 - 量化交易AI系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/static/css/style.css" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/">量化交易AI系统</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">首页</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/watchlist">自选股</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/strategies">策略管理</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/backtest">回测</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/analysis">AI分析</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/data">数据管理</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/monitor">系统监控</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-12">
+                <h2>数据管理</h2>
+                <p class="text-muted">管理和更新股票数据</p>
+            </div>
+        </div>
+
+        <div class="row mt-4">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">数据统计</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-6">
+                                <div class="text-center">
+                                    <h4 class="text-primary">{{ data_stats.total_stocks }}</h4>
+                                    <p class="text-muted">总股票数</p>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="text-center">
+                                    <h4 class="text-success">{{ data_stats.watchlist_count }}</h4>
+                                    <p class="text-muted">自选股数</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <p class="text-muted"><strong>最后更新:</strong> {{ data_stats.last_update }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">数据更新</h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="updateForm">
+                            <div class="mb-3">
+                                <label for="updateSymbol" class="form-label">选择股票</label>
+                                <select class="form-select" id="updateSymbol" name="symbol" required>
+                                    <option value="">请选择股票</option>
+                                    {% if not watchlist.empty %}
+                                    {% for index, stock in watchlist.iterrows() %}
+                                    <option value="{{ stock.symbol }}">{{ stock.symbol }} - {{ stock['name'] }}</option>
+                                    {% endfor %}
+                                    {% endif %}
+                                </select>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-primary">更新数据</button>
+                        </form>
+                        
+                        <div id="updateStatus" class="mt-3" style="display: none;">
+                            <div class="alert alert-info">
+                                <div class="d-flex align-items-center">
+                                    <div class="spinner-border spinner-border-sm me-2" role="status">
+                                        <span class="visually-hidden">Loading...</span>
+                                    </div>
+                                    正在更新数据...
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">数据源状态</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="text-center">
+                                    <h6>Yahoo Finance</h6>
+                                    <span class="badge bg-success">正常</span>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="text-center">
+                                    <h6>AKShare</h6>
+                                    <span class="badge bg-success">正常</span>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="text-center">
+                                    <h6>Tushare</h6>
+                                    <span class="badge bg-warning">需要Token</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/js/main.js"></script>
+    <script>
+        document.getElementById('updateForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const symbol = document.getElementById('updateSymbol').value;
+            if (!symbol) {
+                alert('请选择股票');
+                return;
+            }
+            
+            // 显示更新状态
+            document.getElementById('updateStatus').style.display = 'block';
+            
+            fetch(`/api/data/update/${symbol}`, {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    alert('数据更新成功: ' + data.message);
+                } else {
+                    alert('数据更新失败: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('数据更新失败');
+            })
+            .finally(() => {
+                document.getElementById('updateStatus').style.display = 'none';
+            });
+        });
+    </script>
+</body>
+</html>

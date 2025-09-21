@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>K线图测试</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+</head>
+<body>
+    <div id="chart" style="width: 100%; height: 600px;"></div>
+    <script>
+        // 测试K线图
+        var chart = echarts.init(document.getElementById('chart'));
+        var option = {
+            title: {
+                text: '测试K线图'
+            },
+            xAxis: {
+                data: ['2024-01-01', '2024-01-02', '2024-01-03']
+            },
+            yAxis: {},
+            series: [{
+                type: 'candlestick',
+                data: [
+                    [100, 105, 95, 102],
+                    [102, 108, 98, 105],
+                    [105, 110, 100, 108]
+                ]
+            }]
+        };
+        chart.setOption(option);
+    </script>
+</body>
+</html>

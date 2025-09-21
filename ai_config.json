@@ -1,0 +1,80 @@
+{
+  "models": {
+    "gpt4": {
+      "enabled": false,
+      "api_key": "",
+      "base_url": "https://api.openai.com/v1",
+      "model_name": "gpt-4",
+      "temperature": 0.7,
+      "max_tokens": 2000,
+      "timeout": 30,
+      "retry_count": 3,
+      "priority": 1
+    },
+    "gpt35": {
+      "enabled": false,
+      "api_key": "",
+      "base_url": "https://api.openai.com/v1",
+      "model_name": "gpt-3.5-turbo",
+      "temperature": 0.7,
+      "max_tokens": 2000,
+      "timeout": 30,
+      "retry_count": 3,
+      "priority": 2
+    },
+    "deepseek": {
+      "enabled": false,
+      "api_key": "",
+      "base_url": "https://api.deepseek.com/v1",
+      "model_name": "deepseek-chat",
+      "temperature": 0.7,
+      "max_tokens": 2000,
+      "timeout": 30,
+      "retry_count": 3,
+      "priority": 3
+    },
+    "gemini": {
+      "enabled": false,
+      "api_key": "",
+      "base_url": null,
+      "model_name": "gemini-pro",
+      "temperature": 0.7,
+      "max_tokens": 2000,
+      "timeout": 30,
+      "retry_count": 3,
+      "priority": 4
+    },
+    "qwen": {
+      "enabled": false,
+      "api_key": "",
+      "base_url": "https://dashscope.aliyuncs.com/api/v1",
+      "model_name": "qwen-turbo",
+      "temperature": 0.7,
+      "max_tokens": 2000,
+      "timeout": 30,
+      "retry_count": 3,
+      "priority": 5
+    },
+    "grok": {
+      "enabled": false,
+      "api_key": "",
+      "base_url": "https://api.x.ai/v1",
+      "model_name": "grok-beta",
+      "temperature": 0.7,
+      "max_tokens": 2000,
+      "timeout": 30,
+      "retry_count": 3,
+      "priority": 6
+    }
+  },
+  "features": {
+    "market_sentiment_analysis": true,
+    "trading_signal_generation": true,
+    "strategy_optimization": true,
+    "risk_warning": true,
+    "news_analysis": true,
+    "technical_analysis_enhancement": true
+  },
+  "fallback_chain": ["gpt4", "deepseek", "gemini"],
+  "last_updated": "2024-01-01T00:00:00"
+}
